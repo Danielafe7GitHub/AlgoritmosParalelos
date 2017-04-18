@@ -35,12 +35,13 @@ void* Thread_sum(void* rank){
 
 int main(int argc, char* argv[]){
 
-	/***************************************************/
-	
+	/******************Time Variables*********************************/
+	clock_t time;
 	/***************************************************/
     long thread;
     thread_count = strtol(argv[1],NULL,10);
     vector<pthread_t> thread_handles(thread_count);
+	time = clock();
     for(thread=0;thread<thread_count;thread++)
     {
         pthread_create(&thread_handles[thread],NULL,Thread_sum,(void*)thread);
@@ -49,7 +50,9 @@ int main(int argc, char* argv[]){
     {
         pthread_join(thread_handles[thread],NULL);
     }
+	time = clock() - time;
 	cout<<"La suma es: "<<sum<<endl;
+    cout<<"La Tiempo  es: "<<(((float)time)/CLOCKS_PER_SEC)<<endl;
 
     return 0;
 }
