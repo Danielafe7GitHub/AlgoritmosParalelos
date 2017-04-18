@@ -2,13 +2,20 @@
 #include <stdlib.h>
 #include <pthread.h>
 #include <time.h>
-#include <iostream>
-#include <vector>
-using namespace std;
+/*Compilar gcc -g -Wall -o linked PthreadLinkedRW.c -lpthread */
 
+#define  members 800
+#define  inserts 100
+#define  deletes 100
 
+/******************Time Variables*********************************/
+clock_t timeInsert;
+clock_t timeMember;
+clock_t timeDelete;
+
+float timeInsertTotal,timeMemberTotal,timeDeleteTotal = 0;
 pthread_rwlock_t rwlock;
-int thread_count;
+
 struct list_node_s{
   int data;
   struct list_node_s* next;
@@ -40,7 +47,7 @@ int Insert(int value, struct list_node_s** head_p){
   }
 
   if(curr_p == NULL || curr_p->data > value){
-    temp_p = new list_node_s();
+    temp_p = malloc(sizeof(struct list_node_s));
     temp_p->data = value;
     temp_p->next = curr_p;
     if(pred_p == NULL)
@@ -78,29 +85,29 @@ int Delete(int value, struct list_node_s** head_p){
 
 struct list_node_s* list = NULL;
 
-void N_Insert(double ops){
-  double i;
-  for(i = 0; i < ops; i++) {
+void Cant_Insert(int cant){
+  int i;
+  for(i = 0; i < cant; i++) {
     pthread_rwlock_wrlock(&rwlock);
-    Insert(1000,&list);
+    Insert(1000,&list);/*Se inserta el valor 1000 cant de veces*/
     pthread_rwlock_unlock(&rwlock);
   }
   return;
 }
 
-void N_Member(double ops){
-  double i;
-  for(i = 0; i < ops; i++) {
+void Cant_Member(int cant){
+  int i;
+  for(i = 0; i < cant; i++) {
     pthread_rwlock_rdlock(&rwlock);
-    Member(1000,list);
+    Member(1000,list);/*Se verifica existencia del valor 1000 cant de veces*/
     pthread_rwlock_unlock(&rwlock);
   }
   return;
 }
 
-void N_Delete(double ops){
-  double i;
-  for(i = 0; i < ops; i++) {
+void Cant_Delete(int cant){
+  int i;
+  for(i = 0; i < cant; i++) {
     pthread_rwlock_wrlock(&rwlock);
     Delete(1000,&list);
     pthread_rwlock_unlock(&rwlock);
@@ -109,42 +116,57 @@ void N_Delete(double ops){
 
 }
 
-double members, inserts, deletes;
 
-void* N_All(void* rank){
+
+void* Operaciones(void* rank){
   long my_rank = (long) rank;
-  //printf("%ld %lf %lf %lf\n", my_rank, members, inserts, deletes);
-  N_Member(members);
-  N_Insert(inserts);
-  N_Delete(deletes);
+
+  timeMember = clock();
+  Cant_Member(members);
+  timeMember = clock() - timeMember;
+  //printf("Member %lf\n", (((float)timeMember)/CLOCKS_PER_SEC));
+  timeMemberTotal+= (((float)timeMember)/CLOCKS_PER_SEC);
+  
+  timeInsert = clock();
+  Cant_Insert(inserts);
+  timeInsert = clock() - timeInsert;
+  //printf("Insert %lf\n", (((float)timeInsert)/CLOCKS_PER_SEC));
+  timeInsertTotal+= (((float)timeInsert)/CLOCKS_PER_SEC);
+
+  timeDelete = clock();
+  Cant_Delete(deletes);
+  timeDelete = clock() - timeDelete;
+  //printf("Delete %lf\n", (((float)timeDelete)/CLOCKS_PER_SEC));
+  timeDeleteTotal+= (((float)timeDelete)/CLOCKS_PER_SEC);
   return NULL;
 }
 
 
+
 int main(int argc, char* argv[]){
-  long thread;
-  thread_count = strtol(argv[1],NULL,10);
 
-  long thread;
-  pthread_t *thread_handles;
-  struct list_node_s* list = NULL;
-  struct timespec begin,end;
-  //double members,inserts,deletes;
-  pthread_rwlock_init(&rwlock,NULL);
-  
-  thread_count = strtol(argv[1],NULL,10);
-  vector<pthread_t> thread_handles(thread_count);
-  scanf("%lf %lf %lf", &members, &inserts, &deletes);
-  members = (members * 1000.0)/thread_count;
-  inserts = (inserts * 1000.0)/thread_count;
-  deletes = (deletes * 1000.0)/thread_count;
-  for(int i = 0; i < 1000; i++){
-    Insert(i,&list);
-  }
+	/***************************************************/
+    long thread;
+	double thread_count;
+	pthread_t *thread_handles;
+	struct list_node_s* list = NULL;
+    pthread_rwlock_init(&rwlock,NULL);
+    thread_count = strtol(argv[1],NULL,10);
+	thread_handles = malloc(thread_count* sizeof(pthread_t));
 
-  
-  for(thread = 0; thread < thread_count; thread++) pthread_create(&thread_handles[thread], NULL, N_All, (void*) thread);
-  for(thread = 0; thread < thread_count; thread++) pthread_join(thread_handles[thread], NULL);
- 
-  return 0;
+    for(thread=0;thread<thread_count;thread++)
+    {
+        pthread_create(&thread_handles[thread],NULL,Operaciones,(void*)thread);
+    }
+	for(thread=0;thread<thread_count;thread++)
+    {
+        pthread_join(thread_handles[thread],NULL);
+    }
+	
+	printf("Insert Total %lf\n", timeInsertTotal);
+	printf("Member Total %lf\n", timeMemberTotal);
+	printf("Delete Total %lf\n", timeDeleteTotal);
+	printf("Promedio Total %lf\n", (timeDeleteTotal+timeInsertTotal+timeMemberTotal)/3);
+
+    return 0;
 }
