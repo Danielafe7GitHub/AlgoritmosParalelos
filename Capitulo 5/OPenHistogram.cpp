@@ -24,11 +24,19 @@ vector<int> doChunks(string subCadena)
 
 void histogram(string cadena)
 {
-#pragma omp parallel for shared(numChunks, chunk) reduction(+:counter)
+    #pragma omp parallel for shared(numChunks) reduction(+:a,b,c)
 
     int a,b,c = 0;
+    int numChunks = 3; //Subdividimos la Cadena Original en numChunks Partes
+    int my_rank = omp_get_thread_num();
+    int inicioCadena = initCadena + my_rank*numChunks;
+    int finalCadena  = inicioCadena + numChunks;
     string subCadena;
-    int numChunks = 3;
+    for(int i=inicioCadena;i<finalCadena;i++)
+    {
+        subCadena += cadena[i];
+    }
+    
     vector<int> numCaracteres;
     for (int i = 0; i < numChunks; i++)
     {
@@ -39,11 +47,25 @@ void histogram(string cadena)
     }
 }
 
+void print(int a, int b, int c)
+{
+    for(int i=0;i<a;i++)
+        cout<<"X";
+    cout<<endl;
+    
+    for(int i=0;i<b;i++)
+        cout<<"X";
+    cout<<endl;
+    
+    for(int i=0;i<c;i++)
+        cout<<"X";
+    cout<<endl;
+    
 }
 
 
-
 int main() {
-    std::cout << "Hello, World!" << std::endl;
+    string cadena = "aabbccbaabbccba";
+    histogram(cadena);
     return 0;
 }
