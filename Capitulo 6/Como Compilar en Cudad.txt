@@ -1,0 +1,4 @@
+nvcc  multMatrices.cu -o pro
+./pro
+
+
